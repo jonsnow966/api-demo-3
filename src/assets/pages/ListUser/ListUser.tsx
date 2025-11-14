@@ -44,7 +44,6 @@ function ListUser() {
   //handles delete button click
   const handleDelete = (userId: number) => {
     if (mutation.isPending) return;
-
     pendingDeleteId.current = userId; // ← Store ID
     mutation.mutate(userId);
   };
@@ -55,15 +54,17 @@ function ListUser() {
   }
   
   //loads data cards from DB
-  const  {data, isPending ,isError} = useQuery({
+  const  {data, isPending, isFetching ,isError} = useQuery({
     queryKey: ['users'],
     queryFn: fetchAPI,
   });
 
+  const showLoader = isPending || (isFetching && !isPending);
+
   return (
     <div className="w-full h-fit
     flex flex-wrap justify-center sm:justify-start items-start gap-4 pl-10 p-4">
-      {isPending 
+      {showLoader
       ? <Loader loader_name="Loading"/>
       : (data ? data.map(
         (e:UserData) =>
