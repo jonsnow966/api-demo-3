@@ -4,6 +4,9 @@ export const deleteAPI = async (id:number) => {
     const res = await fetch(`${BASE}/${id}`, {
         method: 'DELETE',
     });
+    await res.json();
 
-    return res.json();
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    return {success : true};
 }

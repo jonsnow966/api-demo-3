@@ -57,7 +57,7 @@ function UpdateUser() {
         name: data.name,
         age: numAge,
       });
-      await delay (1000);
+      await delay (3000);
     }
     catch(err){
       console.log(err);

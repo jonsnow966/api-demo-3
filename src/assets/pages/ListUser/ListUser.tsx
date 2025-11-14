@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAPI } from "../../api/fetchAPI";
-
 import Button from "../../components/Button/Button"
 import { useTheme } from "../../hooks/useTheme/useTheme";
 import { deleteAPI } from "../../api/deleteAPI";
 import { useNavigate } from "react-router-dom";
 import Loader from "../../components/Loader/Loader";
+import { useRef } from "react";
 
 interface UserData{
   id: number,
@@ -14,37 +14,47 @@ interface UserData{
 }
   
 function ListUser() {
-
+  //imported dark state for theme setting
   const {dark} = useTheme();
 
-  const navigate = useNavigate()
-;
+  //to navigate to update page
+  const navigate = useNavigate();
+
+  //queryClient created to use it for CRUD ops
   const queryClient = useQueryClient();
 
+  const pendingDeleteId = useRef<number | null>(null);
+
+  //mutation for delete
   const mutation = useMutation({
     mutationFn: deleteAPI,
+    onSuccess: () => {
+      // Use the stored ID
+      const id = pendingDeleteId.current;
+      if (id !== null) {
+        queryClient.setQueryData(['users'], (old: UserData[] | undefined) =>
+          old?.filter(u => u.id !== id) || []
+        );
+      }
+      pendingDeleteId.current = null; // Reset
+    },
+  });
+   
 
-    onSuccess: () =>{
-      queryClient.invalidateQueries({queryKey: ['users']})
-    }
-  })
+  //handles delete button click
+  const handleDelete = (userId: number) => {
+    if (mutation.isPending) return;
 
+    pendingDeleteId.current = userId; // ← Store ID
+    mutation.mutate(userId);
+  };
+
+  //handles update button click
   const handleClick = (user : UserData) =>{
     navigate('/update', {state : user})
   }
-
-  const handleDelete = async(userId : number) =>{
-
-    if(!userId) return;
-
-    try{
-      mutation.mutate(userId)
-    }
-    catch(err){
-      console.log(err);
-    }
-  }
   
+  //loads data cards from DB
   const  {data, isPending ,isError} = useQuery({
     queryKey: ['users'],
     queryFn: fetchAPI,
@@ -86,12 +96,12 @@ function ListUser() {
                     onClick={() => handleClick(e)}
                   />
 
-                  <Button 
-                    button_name='Delete' 
-                    button_width="" 
-                    button_type="button" 
-                    button_disabled= {false}
-                    onClick = {() => handleDelete(e.id)}
+                  <Button
+                    button_name={mutation.isPending && pendingDeleteId.current === e.id ? 'Deleting...' : 'Delete'}
+                    button_width="1/2"
+                    button_type="button"
+                    button_disabled={mutation.isPending && pendingDeleteId.current === e.id}
+                    onClick={() => handleDelete(e.id)}
                   />
               </div>
           </div>
